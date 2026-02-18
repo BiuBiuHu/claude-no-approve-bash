@@ -1,6 +1,10 @@
 # Claude No Approve Bash
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 让 Claude Code 无需审批执行复杂 bash 命令的 Skill。
+
+> **仓库**：https://github.com/BiuBiuHu/claude-no-approve-bash
 
 ## 问题
 
@@ -12,13 +16,26 @@
 
 ## 快速开始
 
-### 1. 复制 Skill 到项目
+### 方式 1：一键安装
 
 ```bash
-cp -r skill/no-approve-bash .claude/skills/
+curl -sSL https://raw.githubusercontent.com/BiuBiuHu/claude-no-approve-bash/main/install.sh | bash
 ```
 
-### 2. 配置权限
+### 方式 2：手动安装
+
+```bash
+# 1. 克隆仓库
+git clone https://github.com/BiuBiuHu/claude-no-approve-bash.git
+cd claude-no-approve-bash
+
+# 2. 复制 Skill 到项目
+cp -r skill/no-approve-bash .claude/skills/
+
+# 3. 配置权限（在项目的 .claude/settings.local.json 中添加）
+```
+
+### 配置权限
 
 在项目的 `.claude/settings.local.json` 中添加：
 
@@ -33,7 +50,7 @@ cp -r skill/no-approve-bash .claude/skills/
 }
 ```
 
-### 3. 验证安装
+### 验证安装
 
 ```bash
 # 执行复杂命令测试
@@ -126,6 +143,10 @@ chmod +x ~/.claude-bin/auto-run-tests
 └── scripts/            # 内置工具
 ```
 
+## 贡献
+
+欢迎提交 Issue 和 Pull Request！
+
 ## License
 
-MIT
+[MIT](LICENSE)

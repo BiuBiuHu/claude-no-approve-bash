@@ -2,40 +2,48 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-让 Claude Code 无需审批执行复杂 bash 命令的 Skill。
+<!-- ~~[中文版](README_zh.md)~~ -->
 
-> **仓库**：https://github.com/BiuBiuHu/claude-no-approve-bash
+A Skill for Claude Code to execute complex bash commands without repeated approval prompts.
 
-## 问题
+**Repository**: https://github.com/BiuBiuHu/claude-no-approve-bash
 
-当使用 Claude Code 执行复杂的 bash 命令时（如 `for` 循环、管道、多命令组合），系统会要求用户反复审批每个操作，影响工作效率。
+## The Problem / 问题
 
-## 解决方案
+When using Claude Code with complex bash commands (loops, pipes, command chaining), the system requires approval for each operation, reducing productivity.
+
+使用 Claude Code 执行复杂的 bash 命令时（如 `for` 循环、管道、多命令组合），系统会要求用户反复审批每个操作，影响工作效率。
+
+## The Solution / 解决方案
+
+Convert complex commands into scripts stored in `~/.claude-bin/`, enabling approval-free execution through permission configuration.
 
 将复杂命令转化为脚本，存放到 `~/.claude-bin/` 目录，通过配置权限实现无需审批执行。
 
-## 快速开始
+## Quick Start / 快速开始
 
-### 方式 1：一键安装
+### Method 1: One-line Install / 一键安装
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/BiuBiuHu/claude-no-approve-bash/main/install.sh | bash
 ```
 
-### 方式 2：手动安装
+### Method 2: Manual Install / 手动安装
 
 ```bash
-# 1. 克隆仓库
+# 1. Clone the repository / 克隆仓库
 git clone https://github.com/BiuBiuHu/claude-no-approve-bash.git
 cd claude-no-approve-bash
 
-# 2. 复制 Skill 到项目
+# 2. Copy Skill to your project / 复制 Skill 到项目
 cp -r skill/no-approve-bash .claude/skills/
 
-# 3. 配置权限（在项目的 .claude/settings.local.json 中添加）
+# 3. Configure permissions / 配置权限
 ```
 
-### 配置权限
+### Configure Permissions / 配置权限
+
+Add to `.claude/settings.local.json` in your project:
 
 在项目的 `.claude/settings.local.json` 中添加：
 
@@ -50,103 +58,141 @@ cp -r skill/no-approve-bash .claude/skills/
 }
 ```
 
-### 验证安装
+### Verify Installation / 验证安装
 
 ```bash
-# 执行复杂命令测试
-for project in server client; do echo "=== $project ===" && cd "$project" && npm test; done
+# Test with a complex command / 测试复杂命令
+for dir in */; do echo "=== $dir ===" && ls "$dir" | head -3; done
 ```
+
+Claude will automatically convert it to a script and execute without approval prompts.
 
 Claude 会自动将其转化为脚本并执行，无需审批。
 
-## 工作原理
+## How It Works / 工作原理
 
 ```
-用户输入复杂命令
+User inputs complex command / 用户输入复杂命令
        ↓
-AI 识别为复杂命令（循环/管道/组合）
+AI recognizes as complex (loops/pipes/chaining) / AI 识别为复杂命令
        ↓
-创建脚本到 ~/.claude-bin/auto-xxx
+Creates script in ~/.claude-bin/auto-xxx / 创建脚本
        ↓
-直接执行（已授权，无需审批）
+Executes directly (pre-authorized) / 直接执行（已授权）
 ```
 
-## 安全设计
+## Security Design / 安全设计
 
-### 白名单机制
+### Whitelist Mechanism / 白名单机制
+
+Only commands **already authorized in settings** can be combined:
 
 只有**已在 settings 中授权**的命令才能组合使用：
 
-| 类别 | 命令 |
-|------|------|
-| 版本管理 | `git`, `gh` |
-| 包管理 | `npm`, `npx`, `yarn`, `pnpm`, `python`, `pip` |
-| 文件读取 | `ls`, `cat`, `grep`, `find`, `jq` |
-| 网络 | `curl` |
-| 部署 | `vercel`, `supabase` |
+| Category / 类别 | Commands / 命令 |
+|-----------------|-----------------|
+| Version Control / 版本管理 | `git`, `gh` |
+| Package Managers / 包管理 | `npm`, `npx`, `yarn`, `pnpm`, `python`, `pip` |
+| File Operations / 文件读取 | `ls`, `cat`, `grep`, `find`, `jq` |
+| Network / 网络 | `curl` |
+| Deployment / 部署 | `vercel`, `supabase` |
 
-### 高危操作仍需审批
+### High-risk Operations Still Require Approval / 高危操作仍需审批
+
+The following commands are **NOT auto-authorized**:
 
 以下命令**不自动授权**：
-- `rm -rf /` / `rm -rf ~/` 系统目录删除
-- `dd if=/dev/` 磁盘写入
-- `mkfs` 格式化
-- fork 炸弹等破坏性操作
 
-## 使用示例
+- `rm -rf /` / `rm -rf ~/` system directory deletion / 系统目录删除
+- `dd if=/dev/` disk write / 磁盘写入
+- `mkfs` formatting / 格式化
+- fork bombs and other destructive operations / fork 炸弹等破坏性操作
 
-### 示例 1：遍历项目执行命令
+## Usage Examples / 使用示例
 
-**用户输入**：
+### Example 1: Iterate Over Directories / 遍历目录
+
+**User Input / 用户输入**:
 ```
-在所有项目中运行 npm test
+List first 3 files in each subdirectory
+列出每个子目录的前 3 个文件
 ```
 
-**AI 自动转化**：
+**AI Auto-converts / AI 自动转化**:
 ```bash
-cat > ~/.claude-bin/auto-run-tests << 'EOF'
+cat > ~/.claude-bin/auto-list-files << 'EOF'
 #!/bin/bash
-for project in server ai-service email-service; do
-    if [ -d "$project" ]; then
-        echo "=== $project ==="
-        cd "$project" && npm test
+# List first 3 files in each subdirectory / 列出每个子目录的前 3 个文件
+
+for dir in */; do
+    if [ -d "$dir" ]; then
+        echo "=== $dir ==="
+        ls "$dir" | head -3
     fi
 done
 EOF
-chmod +x ~/.claude-bin/auto-run-tests
-~/.claude-bin/auto-run-tests
+chmod +x ~/.claude-bin/auto-list-files
+~/.claude-bin/auto-list-files
 ```
 
-### 示例 2：查找包含特定内容的文件
+### Example 2: Search in Multiple Files / 多文件搜索
 
-**用户输入**：
+**User Input / 用户输入**:
 ```
-查找所有项目中包含 "react" 的 package.json
+Count lines containing "TODO" in all .js files
+统计所有 .js 文件中包含 "TODO" 的行数
 ```
 
-**AI 自动转化**并执行。
+**AI Auto-converts / AI 自动转化** and executes.
 
-## 内置工具
+### Example 3: Git Operations / Git 操作
 
-| 脚本 | 用途 |
-|------|------|
-| `make-script-safe` | 安全脚本创建器（内置危险操作检测） |
-| `sync-settings` | 检查项目 settings 权限配置 |
-| `security-audit` | 审查脚本安全性 |
+**User Input / 用户输入**:
+```
+Show git status for all subdirectories that are git repos
+显示所有 git 仓库子目录的状态
+```
 
-## 目录结构
+**AI Auto-converts / AI 自动转化**:
+```bash
+cat > ~/.claude-bin/auto-git-status << 'EOF'
+#!/bin/bash
+# Show git status for all git repos / 显示所有 git 仓库的状态
+
+for dir in */; do
+    if [ -d "$dir/.git" ]; then
+        echo "=== $dir ==="
+        cd "$dir" && git status -s && cd ..
+    fi
+done
+EOF
+chmod +x ~/.claude-bin/auto-git-status
+~/.claude-bin/auto-git-status
+```
+
+## Built-in Tools / 内置工具
+
+| Script / 脚本 | Purpose / 用途 |
+|----------------|--------------|
+| `make-script-safe` | Safe script creator with dangerous operation detection / 安全脚本创建器（内置危险操作检测） |
+| `sync-settings` | Check project settings permissions / 检查项目 settings 权限配置 |
+| `security-audit` | Audit script security / 审查脚本安全性 |
+
+## Directory Structure / 目录结构
 
 ```
-~/.claude-bin/          # AI 生成的脚本
-.claude/skills/no-approve-bash/  # Skill 定义
+~/.claude-bin/                    # Scripts generated by AI / AI 生成的脚本
+.claude/skills/no-approve-bash/   # Skill definition / Skill 定义
 ├── SKILL.md
-└── scripts/            # 内置工具
+└── scripts/                       # Built-in tools / 内置工具
 ```
 
-## 贡献
+## Contributing / 贡献
+
+Issues and Pull Requests are welcome!
 
 欢迎提交 Issue 和 Pull Request！
 
-## License
+## License / 许可证
 
 [MIT](LICENSE)

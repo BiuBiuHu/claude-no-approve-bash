@@ -1,0 +1,62 @@
+#!/bin/bash
+# ~/.claude-bin 安全审查脚本
+# 用法: security-audit [目录]
+
+SCAN_DIR="${1:-$HOME/.claude-bin}"
+
+echo "🔍 审查脚本安全性: $SCAN_DIR"
+echo "================================"
+
+# 危险命令模式
+DANGEROUS_PATTERNS=(
+    "rm -rf /"
+    "rm -rf ~/"
+    "rm -rf /home"
+    "rm -rf /usr"
+    "rm -rf /etc"
+    "rm -rf \.git"
+    "rm -rf \.\./\.\./\.\."
+    "mv .* /dev/"
+    "dd if="
+    "mkfs"
+    ":(){ :|:& };:"
+    "chmod 000 /"
+    "chown -R root"
+    "shutdown"
+    "reboot"
+    "init 0"
+)
+
+found_issues=0
+
+for script in "$SCAN_DIR"/*; do
+    if [ -f "$script" ]; then
+        script_name=$(basename "$script")
+        echo ""
+        echo "📄 $script_name"
+
+        for pattern in "${DANGEROUS_PATTERNS[@]}"; do
+            if grep -q "$pattern" "$script" 2>/dev/null; then
+                echo "   ⚠️  发现危险模式: $pattern"
+                ((found_issues++))
+            fi
+        done
+
+        # 检查是否有 shebang
+        if ! head -1 "$script" | grep -q '^#!'; then
+            echo "   ⚠️  缺少 shebang"
+        fi
+
+        # 显示脚本大小
+        size=$(wc -l < "$script" 2>/dev/null)
+        echo "   📏 行数: $size"
+    fi
+done
+
+echo ""
+echo "================================"
+if [ $found_issues -eq 0 ]; then
+    echo "✅ 未发现明显安全问题"
+else
+    echo "⚠️  发现 $found_issues 个潜在问题，请人工审查"
+fi

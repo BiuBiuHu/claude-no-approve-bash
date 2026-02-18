@@ -1,0 +1,54 @@
+#!/bin/bash
+# 安全脚本创建器 - 内置危险操作检测
+# 用法: make-script <filename> [content]
+
+SCRIPT_DIR="$HOME/.claude-bin"
+SCRIPT_NAME="$1"
+SCRIPT_PATH="$SCRIPT_DIR/$SCRIPT_NAME"
+
+# 危险命令模式（拒绝创建）
+DANGEROUS_PATTERNS=(
+    "rm -rf /"
+    "rm -rf ~/"
+    "rm -rf /home"
+    "rm -rf /usr"
+    "rm -rf /etc"
+    "rm -rf \.git"
+    "rm -rf \.\./\.\./\.\."
+    "rm -rf node_modules"
+    "dd if=/dev/zero"
+    "dd if=/dev/random"
+    "mkfs"
+    ":(){ :|:& };:"
+    "chmod 000 /"
+    "shutdown -h"
+    "reboot"
+    "init 0"
+)
+
+# 获取脚本内容
+if [ -n "$2" ]; then
+    CONTENT="$2"
+else
+    CONTENT=$(cat)
+fi
+
+# 安全检查
+echo "🔍 安全检查中..."
+for pattern in "${DANGEROUS_PATTERNS[@]}"; do
+    if echo "$CONTENT" | grep -q "$pattern"; then
+        echo "❌ 拒绝创建：检测到危险操作 [$pattern]"
+        echo "⚠️  如需创建此脚本，请手动创建并确认安全性"
+        exit 1
+    fi
+done
+
+# 检查是否有 shebang
+if ! echo "$CONTENT" | head -1 | grep -q '^#!'; then
+    CONTENT="#!/bin/bash"$'\n'"$CONTENT"
+fi
+
+# 创建脚本
+printf '%s\n' "$CONTENT" > "$SCRIPT_PATH"
+chmod +x "$SCRIPT_PATH"
+echo "✅ 已创建: $SCRIPT_PATH"
